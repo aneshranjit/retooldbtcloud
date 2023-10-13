@@ -10,12 +10,12 @@ WITH shopify_sales1 AS (
         shipping_address.city as city,
         shipping_address.province_code as province,
         null as salon_id,
-        cast(id as STRING) as transaction_id,
-        (if(cancelled_at is null, if(financial_status = "paid" and fulfillment_status = "fulfilled", "Completed", "Pending"), "Cancelled")) as transaction_status,
-        PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%S',  substr(created_at, 0, 19)) as purchase_date_time, 
-        shopify_orders.customer.email as customer_email,
-        shopify_orders.customer.first_name as customer_first_name,
-        shopify_orders.customer.last_name as customer_last_name,
+        cast(shopify_orders.id as STRING) as transaction_id,
+        (if(cancelled_at is null, if(shopify_orders.financial_status = "paid" and shopify_orders.fulfillment_status = "fulfilled", "Completed", "Pending"), "Cancelled")) as transaction_status,
+        cast(FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%S', shopify_orders.created_at) as TIMESTAMP) as purchase_date_time, 
+        shopify_customers.email as customer_email,
+        shopify_customers.first_name as customer_first_name,
+        shopify_customers.last_name as customer_last_name,
         line_items.name as item_name,
         cast((select 
           prod_norm.category
