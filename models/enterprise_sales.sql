@@ -8,16 +8,16 @@ WITH ent_sales1 as (
     select
         cast((select
             common_salons.normalised_salon_name
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcuts_common_salons` as common_salons
+        from `ellabache-singleview.retool_db.shortcuts_common_salons` as common_salons
         where common_salons.ent_salon_id = ent_lineitems.siteid) as STRING) as common_salon_name,
         cast((select
             salon_norm.normalised_salon_name
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_salon_name_normalisation` as salon_norm
+        from `ellabache-singleview.retool_db.salon_name_normalisation` as salon_norm
         where salon_norm.salon_id = ent_lineitems.siteid
         group by salon_norm.normalised_salon_name) as STRING) as salon_name,
         cast((select
             salon_norm.state
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_salon_name_normalisation` as salon_norm
+        from `ellabache-singleview.retool_db.salon_name_normalisation` as salon_norm
         where salon_norm.salon_id = ent_lineitems.siteid
         group by salon_norm.state) as STRING) as salon_state,
         ent_lineitems.siteid as salon_id,
@@ -27,9 +27,11 @@ WITH ent_sales1 as (
             else "Cancelled"
         end) as transaction_status,
         transactiondatetime as purchase_date_time,
+        EXTRACT(DATE FROM transactiondatetime) as purchase_date,
+        ent_lineitems.clientid as customer_id,
         cast((select
             ent_cus.emailaddress
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_customers` as ent_cus
+        from `ellabache-singleview.retool_db.shortcutsent_customers` as ent_cus
         where ent_cus.customerid = ent_lineitems.clientid) as STRING) as customer_email,
         clientfirstname as customer_first_name,
         clientsurname as customer_last_name,
@@ -43,7 +45,7 @@ WITH ent_sales1 as (
         end) as is_ellabache_product,
         "Shortcuts Enterprise" as data_source
     from 
-        `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_transactionlines` as ent_lineitems
+        `ellabache-singleview.retool_db.shortcutsent_transactionlines` as ent_lineitems
     left outer join `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_products` as se_prod on ent_lineitems.itemid = se_prod.productid
     where ent_lineitems.itemtypestringcode = "ItemType.Product"
     order by ent_lineitems.transactiondatetime desc
@@ -52,16 +54,16 @@ ent_sales2 as (
     select
         cast((select
             common_salons.normalised_salon_name
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcuts_common_salons` as common_salons
+        from `ellabache-singleview.retool_db.shortcuts_common_salons` as common_salons
         where common_salons.ent_salon_id = ent_lineitems.siteid) as STRING) as common_salon_name,
         cast((select
             salon_norm.normalised_salon_name
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_salon_name_normalisation` as salon_norm
+        from `ellabache-singleview.retool_db.salon_name_normalisation` as salon_norm
         where salon_norm.salon_id = ent_lineitems.siteid
         group by salon_norm.normalised_salon_name) as STRING) as salon_name,
         cast((select
             salon_norm.state
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_salon_name_normalisation` as salon_norm
+        from `ellabache-singleview.retool_db.salon_name_normalisation` as salon_norm
         where salon_norm.salon_id = ent_lineitems.siteid
         group by salon_norm.state) as STRING) as salon_state,
         ent_lineitems.siteid as salon_id,
@@ -71,9 +73,11 @@ ent_sales2 as (
             else "Cancelled"
         end) as transaction_status,
         transactiondatetime as purchase_date_time,
+        EXTRACT(DATE FROM transactiondatetime) as purchase_date,
+        ent_lineitems.clientid as customer_id,
         cast((select
             ent_cus.emailaddress
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_customers` as ent_cus
+        from `ellabache-singleview.retool_db.shortcutsent_customers` as ent_cus
         where ent_cus.customerid = ent_lineitems.clientid) as STRING) as customer_email,
         clientfirstname as customer_first_name,
         clientsurname as customer_last_name,
@@ -84,7 +88,7 @@ ent_sales2 as (
         "Service" as is_ellabache_product,
         "Shortcuts Enterprise" as data_source
     from 
-        `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_transactionlines` as ent_lineitems
+        `ellabache-singleview.retool_db.shortcutsent_transactionlines` as ent_lineitems
     where itemtypestringcode = "ItemType.Service"
     order by ent_lineitems.transactiondatetime desc
 ),
@@ -97,17 +101,19 @@ ent_sales3 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        cast(purchase_date as timestamp) as purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
         cast((select 
             prod_norm.normalised_product_name
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_product_normalisation` as prod_norm
+        from `ellabache-singleview.retool_db.shortcutsent_product_normalisation` as prod_norm
         where prod_norm.shortcutsent_product_name = ent_sales1.item_name
         group by prod_norm.normalised_product_name) as STRING) as item_name,
         cast((select 
             prod_norm.category
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_product_normalisation` as prod_norm
+        from `ellabache-singleview.retool_db.shortcutsent_product_normalisation` as prod_norm
         where prod_norm.shortcutsent_product_name = ent_sales1.item_name
         group by prod_norm.category) as STRING) as item_category,
         item_type,
@@ -128,13 +134,15 @@ ent_sales41 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        cast(purchase_date as timestamp) as purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
         item_name,
         (select any_value(cats) as item_category from (select
             serv_norm.category
-        from `ellabache-singleview.ellabachesingleview_clone.ebdb_shortcutsent_service_normalisation` as serv_norm
+        from `ellabache-singleview.retool_db.shortcutsent_service_normalisation` as serv_norm
         where serv_norm.shortcutsent_service_name = ent_sales2.item_name
         group by serv_norm.category) as cats) as item_category,
         item_type,
@@ -155,6 +163,8 @@ ent_sales4 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
@@ -178,6 +188,8 @@ ent_sales5 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
@@ -202,6 +214,8 @@ ent_sales6 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
@@ -223,6 +237,8 @@ ent_sales6 as (
         transaction_id,
         transaction_status,
         purchase_date_time,
+        purchase_date,
+        customer_id,
         customer_email,
         customer_first_name,
         customer_last_name,
@@ -257,6 +273,7 @@ select
     data_source
 from 
     ent_sales6
-where item_qty >= 0    
+WHERE item_qty >= 0 
 order by purchase_date_time desc
+
 
